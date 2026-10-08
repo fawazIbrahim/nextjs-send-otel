@@ -1,36 +1,65 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Safe-Insurance (MVP)
 
-## Getting Started
+A Next.js app that lists insurance products and shows each product's details. It contains the frontend and its Backend-for-Frontend (BFF) API, which calls a mocked remote service.
 
-First, run the development server:
+## Quick start
+
+Requires Node.js 20.19+ (developed on Node 24).
 
 ```bash
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open http://localhost:3000.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Try the API
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```bash
+curl localhost:3000/api/products
+curl localhost:3000/api/products/home-secure
+curl localhost:3000/mock-remote/v1/products   # the mocked remote service
+```
 
-## Learn More
+Product ids: `auto-comprehensive`, `home-secure`, `health-plus`, `life-family` (`home-legacy` is retired and hidden by the BFF).
 
-To learn more about Next.js, take a look at the following resources:
+## Scripts
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+| Script | Description |
+|---|---|
+| `npm run dev` | Dev server |
+| `npm run build` / `npm start` | Production build / serve |
+| `npm test` | Unit tests (Vitest) |
+| `npm run lint` | ESLint |
+| `npm run typecheck` | TypeScript check |
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Configuration
 
-## Deploy on Vercel
+Copy `.env.example` to `.env.local` to override. Set `REMOTE_SERVICE_URL` to use a real remote service instead of the built-in mock.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## Structure
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+```
+src/app/            pages, BFF routes (api/), mock remote service (mock-remote/)
+src/server/         BFF services/mappers, remote client, schema, mock data
+src/lib/            shared types, formatting, BFF client used by pages
+src/components/     UI components
+docs/DESIGN.md      architecture and decisions
+AGENTS.md           guide for AI coding agents (CLAUDE.md points to it)
+```
+
+See [docs/DESIGN.md](docs/DESIGN.md) for the design, API contract and trade-offs.
+
+## Telemetry
+
+Traces and metrics (server and browser) are exported over OTLP/HTTP to Tempo and Mimir, with optional IBM App ID auth. See [docs/INTEGRATION-GUIDE.md](docs/INTEGRATION-GUIDE.md); all variables are in `.env.example` (copy to `.env.local` and fill in real values).
+
+To try it locally without real backends:
+
+```bash
+npm run mock:otlp          # terminal 1: fake receiver on :4318
+# terminal 2 (PowerShell: set $env:NAME = "value" instead)
+OTEL_EXPORTER_OTLP_TRACES_ENDPOINT=http://localhost:4318/v1/traces \
+OTEL_EXPORTER_OTLP_METRICS_ENDPOINT=http://localhost:4318/v1/metrics \
+TELEMETRY_AUTH_PROVIDER=none OTEL_METRIC_EXPORT_INTERVAL=5000 npm run dev
+```
